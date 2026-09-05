@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heating</title>
+<style>
+body{font:15px/1.4 system-ui,sans-serif;margin:0;padding:12px;background:#f4f4f4;color:#222}
+h1{font-size:20px;margin:0 0 10px}
+h2{font-size:16px;margin:16px 0 6px}
+.box{background:#fff;border-radius:8px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px #0002}
+.st{font-size:22px;font-weight:600}
+.on{color:#1a7f37}.off{color:#888}.bad{color:#b00}
+label{display:block;margin:8px 0 4px}
+input{font-size:16px;width:90px;padding:6px}
+button{font-size:16px;padding:6px 14px;margin-left:6px}
+table{border-collapse:collapse;width:100%;max-width:420px}
+td,th{padding:3px 8px;text-align:right;border-bottom:1px solid #eee}
+th:first-child,td:first-child{text-align:left}
+tr.now{background:#fff3c4;font-weight:600}
+td.e{color:#1a7f37;font-weight:600}
+td.plan{color:#6a9;font-style:italic}
+small{color:#666}
+</style>
+</head>
+<body>
+<h1>Electric heating control</h1>
+<div class="box" id="status">Loading…</div>
+<div class="box">
+<label for="lim">Price limit (c/kWh, VAT incl.) – electric heating on at or below this</label>
+<input id="lim" type="number" step="0.01"><button onclick="save()">Save</button>
+<div id="msg"><small></small></div>
+</div>
+<div class="box"><h2>Today</h2><div id="d0"></div></div>
+<div class="box"><h2>Tomorrow</h2><div id="d1"></div></div>
+<p><small>✓ = electric on (actual for past/current hours, <i>italic</i> = planned from current limit).
+Oil heating is always on and covers everything else.</small></p>
+<script>
+var base = location.pathname;
+var S = null;
+
+function get(url) {
+  return fetch(url).then(function (r) {
+    if (r.status === 503) {
+      return new Promise(function (res) { setTimeout(res, 1500); }).then(function () { return get(url); });
+    }
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  });
+}
+
+function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+function fmt(ts) {
+  if (!ts) return "never";
+  var d = new Date(ts * 1000);
+  return pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
+function table(day) {
+  var p = S.p[day];
+  if (!p.length) return "<small>" + (day ? "Not published yet (fetched after 15:00)." : "No prices.") + "</small>";
+  var now = Date.now() / 1000;
+  var h = "<table><tr><th>Hour</th><th>c/kWh</th><th>Electric</th></tr>";
+  for (var i = 0; i < p.length; i++) {
+    var ts = p[i][0], pr = p[i][1];
+    var hr = new Date(ts * 1000).getHours();
+    var cur = day === 0 && now >= ts && now < ts + 3600;
+    var past = day === 0 && now >= ts;
+    var actual = past && S.a[hr] >= 0;
+    var on = actual ? S.a[hr] === 1 : pr <= S.lim;
+    h += "<tr" + (cur ? " class=now" : "") + "><td>" + pad(hr) + "–" + pad((hr + 1) % 24) +
+      "</td><td>" + pr.toFixed(2) + "</td><td class=\"" + (on ? "e" : "") + (actual ? "" : " plan") + "\">" +
+      (on ? "✓" : "–") + "</td></tr>";
+  }
+  return h + "</table>";
+}
+
+function render() {
+  var st = "<div class=st " + (S.on ? "on" : "off") + ">Electric heating " + (S.on ? "ON" : "OFF") + "</div>";
+  var p = S.p[0], now = Date.now() / 1000, cur = null;
+  for (var i = 0; i < p.length; i++) if (now >= p[i][0] && now < p[i][0] + 3600) cur = p[i][1];
+  st += "Current price: <b>" + (cur === null ? "unknown" : cur.toFixed(2) + " c/kWh") + "</b>, limit " + S.lim + " c/kWh<br>";
+  st += "<small>Prices fetched " + fmt(S.ts[0]) + " / tomorrow " + fmt(S.ts[1]) + ", fetch errors: " + S.err +
+    (S.time ? "" : "<span class=bad> – clock not set, outputs OFF</span>") + "</small>";
+  document.getElementById("status").innerHTML = st;
+  if (document.activeElement.id !== "lim") document.getElementById("lim").value = S.lim;
+  document.getElementById("d0").innerHTML = table(0);
+  document.getElementById("d1").innerHTML = table(1);
+}
+
+function refresh() {
+  get(base + "?r=s").then(function (s) { S = s; render(); })
+    .catch(function (e) { document.getElementById("status").innerHTML = "<span class=bad>" + e + "</span>"; });
+}
+
+function save() {
+  var v = document.getElementById("lim").value;
+  document.getElementById("msg").firstChild.textContent = "Saving…";
+  get(base + "?r=l&v=" + encodeURIComponent(v)).then(function (s) {
+    S = s; render();
+    document.getElementById("msg").firstChild.textContent = "Saved, limit " + s.lim + " c/kWh. Outputs update within 10 s.";
+  });
+}
+
+refresh();
+setInterval(refresh, 60000);
+</script>
+</body>
+</html>
