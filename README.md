@@ -95,3 +95,7 @@ the UI retries. Outputs are set sequentially to stay well under the
 ## License
 
 AGPL-3.0, like the project it is derived from.
+
+## Test
+
+This section was added by Hummeri as a PR-flow test.
