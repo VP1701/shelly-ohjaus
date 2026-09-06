@@ -1,0 +1,7 @@
+[
+  {
+    "fname": "dist/heating.js",
+    "title": "Heating | Oil/electric control by spot price",
+    "description": "Turns electric heating on when the hourly Nord Pool price is at or below the limit. Github: https://github.com/<your-user>/shelly-ohjaus"
+  }
+]

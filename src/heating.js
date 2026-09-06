@@ -22,7 +22,7 @@ const LOOP_MS = 10000;
 // Runtime state. Kept flat and small on purpose (25 kB script RAM).
 let S = {
   lim: 10,        // price limit c/kWh, VAT incl. (from KVS)
-  on: false,      // last command sent to outputs
+  on: null,      // last command sent to outputs
   hr: -1,         // local hour the last decision was made for
   day: 0,         // day of month that P[0] belongs to
   ts: [0, 0],     // fetch time of today / tomorrow prices, 0 = not loaded
@@ -257,7 +257,8 @@ function loop() {
       return;
     }
     if (!S.time) {
-      if (S.on || S.hr !== -1) {
+      // Outputs may have restored ON after a power cut: assert OFF once.
+      if (S.on !== false || S.hr !== -1) {
         S.hr = -1;
         setOutputs(false, done);
       } else {

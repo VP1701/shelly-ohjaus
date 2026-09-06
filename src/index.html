@@ -77,7 +77,8 @@ function table(day) {
 }
 
 function render() {
-  var st = "<div class=st " + (S.on ? "on" : "off") + ">Electric heating " + (S.on ? "ON" : "OFF") + "</div>";
+  var st = "<div class=st " + (S.on ? "on" : "off") + ">Electric heating " +
+    (S.on === null ? "not decided yet" : S.on ? "ON" : "OFF") + "</div>";
   var p = S.p[0], now = Date.now() / 1000, cur = null;
   for (var i = 0; i < p.length; i++) if (now >= p[i][0] && now < p[i][0] + 3600) cur = p[i][1];
   st += "Current price: <b>" + (cur === null ? "unknown" : cur.toFixed(2) + " c/kWh") + "</b>, limit " + S.lim + " c/kWh<br>";
