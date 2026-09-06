@@ -20,11 +20,41 @@ Spot-price control for a hybrid oil/electric heating system on a
 
 ## Install
 
-1. Shelly web UI → **Scripts** → **Add script**, paste `dist/heating.js`, save.
-2. Enable **Run on startup**, press **Start**.
-3. The script logs its URL, e.g. `http://192.168.1.50/script/1`. Open it in
+### Option A: from the Shelly script library (recommended)
+
+1. Shelly web UI → **Scripts** → **Library** → **Configure URL** and enter
+
+       https://raw.githubusercontent.com/<user>/shelly-ohjaus/main/shelly-library.json
+
+   The repository must be public for the Shelly to fetch it.
+2. The script appears in the library list. Press **Import code**, give it a
+   name, save.
+3. Enable **Run on startup**, press **Start**.
+4. The script logs its URL, e.g. `http://192.168.1.50/script/1`. Open it in
    a browser on the same network to see prices and change the limit.
 
+The Shelly copies the code at import time. To update, push a new
+`dist/heating.js`, then import again from the library (replacing the old
+script), and check that **Run on startup** is still enabled.
+
+### Option B: paste manually
+
+1. Shelly web UI → **Scripts** → **Add script**, paste the contents of
+   `dist/heating.js`, save.
+2. Continue from step 3 above.
+
+### Device settings
+
+- **Settings → Output settings** for outputs 0, 1 and 2: set *Initial state*
+  to **Off**, so the heater is off between power-up and the script's first
+  decision.
+- If an older spot-price script is installed, stop it and disable its
+  *Run on startup*; two scripts must not drive the same outputs.
+- Optional watchdog: a schedule that calls `Script.Start` every hour restarts
+  the script if it ever stopped (no effect while it runs). In a browser, with
+  your script id:
+
+       http://<ip>/rpc/Schedule.Create?timespec="0 5 * * * *"&calls=[{"method":"Script.Start","params":{"id":1}}]
 ## Web UI
 
 - Current output state, current price, last fetch times, error count.
